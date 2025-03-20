@@ -1,0 +1,28 @@
+package comPackage.lld9.logappender;
+
+import comPackage.lld9.LogMessage;
+
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class FileAppender implements LogAppender {
+    private final String filePath;
+
+    public FileAppender(String filePath) {
+        this.filePath = filePath;
+    }
+
+    @Override
+    public void append(LogMessage logMessage) {
+        try (FileWriter writer = new FileWriter(filePath, true)) {
+            writer.write(logMessage.toString() + "\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            System.out.println("ldsadsd");
+        } catch (Exception e) {
+            System.out.println("ldsadsd");
+        }
+    }
+}

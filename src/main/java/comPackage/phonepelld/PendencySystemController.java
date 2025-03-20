@@ -1,0 +1,9 @@
+package org.example;
+
+import java.util.List;
+
+public interface PendencySystemController {
+    void startTracking(Integer id, List<String> hierarchicalTags);
+    void stopTracking(Integer id);
+    Integer getCounts(List<String> tags);
+}
