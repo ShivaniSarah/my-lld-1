@@ -1,0 +1,80 @@
+import java.util.*;
+
+public class SnakesAndLadders {
+    private static final int WIN_POSITION = 100;
+    private static final Map<Integer, Integer> snakes = new HashMap<>();
+    private static final Map<Integer, Integer> ladders = new HashMap<>();
+    private static final Random random = new Random();
+
+    static {
+        snakes.put(99, 21);
+        snakes.put(95, 75);
+        snakes.put(92, 88);
+        snakes.put(89, 68);
+        snakes.put(74, 53);
+        snakes.put(62, 19);
+        snakes.put(64, 60);
+        snakes.put(49, 11);
+        snakes.put(46, 25);
+        snakes.put(16, 6);
+
+        ladders.put(2, 38);
+        ladders.put(7, 14);
+        ladders.put(8, 31);
+        ladders.put(15, 26);
+        ladders.put(21, 42);
+        ladders.put(28, 84);
+        ladders.put(36, 44);
+        ladders.put(51, 67);
+        ladders.put(71, 91);
+        ladders.put(78, 98);
+        ladders.put(87, 94);
+    }
+
+    private static int rollDice() {
+        return random.nextInt(6) + 1;
+    }
+
+    private static int move(int position) {
+        int dice = rollDice();
+        System.out.println("Rolled a " + dice);
+        if (position + dice > WIN_POSITION) return position;
+
+        position += dice;
+
+        if (snakes.containsKey(position)) {
+            System.out.println("Oops! Bitten by a snake 🐍. Down from " + position + " to " + snakes.get(position));
+            position = snakes.get(position);
+        } else if (ladders.containsKey(position)) {
+            System.out.println("Yay! Climbed a ladder 🪜. Up from " + position + " to " + ladders.get(position));
+            position = ladders.get(position);
+        }
+
+        return position;
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int[] playerPos = {0, 0};
+        int currentPlayer = 0;
+
+        System.out.println("Welcome to Snakes and Ladders!");
+
+        while (true) {
+            System.out.println("\nPlayer " + (currentPlayer + 1) + "'s turn. Press Enter to roll the dice.");
+            sc.nextLine();
+            int newPos = move(playerPos[currentPlayer]);
+            System.out.println("Moved from " + playerPos[currentPlayer] + " to " + newPos);
+            playerPos[currentPlayer] = newPos;
+
+            if (newPos == WIN_POSITION) {
+                System.out.println("🎉 Player " + (currentPlayer + 1) + " wins! 🎉");
+                break;
+            }
+
+            currentPlayer = 1 - currentPlayer; // switch turn
+        }
+
+        sc.close();
+    }
+}
