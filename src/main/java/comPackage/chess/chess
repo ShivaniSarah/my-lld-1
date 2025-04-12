@@ -1,0 +1,188 @@
+import java.util.*;
+
+abstract class Piece {
+    String color;
+    char symbol;
+
+    public Piece(String color) {
+        this.color = color;
+    }
+
+    abstract boolean isValidMove(int x1, int y1, int x2, int y2, Piece[][] board);
+
+    public String toString() {
+        return color.equals("white") ? Character.toUpperCase(symbol) + "" : Character.toLowerCase(symbol) + "";
+    }
+}
+
+class King extends Piece {
+    public King(String color) {
+        super(color);
+        symbol = 'K';
+    }
+
+    boolean isValidMove(int x1, int y1, int x2, int y2, Piece[][] board) {
+        return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)) == 1;
+    }
+}
+
+class Queen extends Piece {
+    public Queen(String color) {
+        super(color);
+        symbol = 'Q';
+    }
+
+    boolean isValidMove(int x1, int y1, int x2, int y2, Piece[][] board) {
+        return new Rook(color).isValidMove(x1, y1, x2, y2, board) ||
+               new Bishop(color).isValidMove(x1, y1, x2, y2, board);
+    }
+}
+
+class Rook extends Piece {
+    public Rook(String color) {
+        super(color);
+        symbol = 'R';
+    }
+
+    boolean isValidMove(int x1, int y1, int x2, int y2, Piece[][] board) {
+        if (x1 != x2 && y1 != y2) return false;
+        int dx = Integer.compare(x2, x1), dy = Integer.compare(y2, y1);
+        int x = x1 + dx, y = y1 + dy;
+        while (x != x2 || y != y2) {
+            if (board[x][y] != null) return false;
+            x += dx;
+            y += dy;
+        }
+        return true;
+    }
+}
+
+class Bishop extends Piece {
+    public Bishop(String color) {
+        super(color);
+        symbol = 'B';
+    }
+
+    boolean isValidMove(int x1, int y1, int x2, int y2, Piece[][] board) {
+        if (Math.abs(x1 - x2) != Math.abs(y1 - y2)) return false;
+        int dx = Integer.compare(x2, x1), dy = Integer.compare(y2, y1);
+        int x = x1 + dx, y = y1 + dy;
+        while (x != x2 && y != y2) {
+            if (board[x][y] != null) return false;
+            x += dx;
+            y += dy;
+        }
+        return true;
+    }
+}
+
+class Knight extends Piece {
+    public Knight(String color) {
+        super(color);
+        symbol = 'N';
+    }
+
+    boolean isValidMove(int x1, int y1, int x2, int y2, Piece[][] board) {
+        int dx = Math.abs(x1 - x2), dy = Math.abs(y1 - y2);
+        return dx * dy == 2;
+    }
+}
+
+class Pawn extends Piece {
+    public Pawn(String color) {
+        super(color);
+        symbol = 'P';
+    }
+
+    boolean isValidMove(int x1, int y1, int x2, int y2, Piece[][] board) {
+        int direction = color.equals("white") ? -1 : 1;
+        if (y1 == y2) {
+            if (x2 - x1 == direction && board[x2][y2] == null) return true;
+            if ((x1 == 6 && color.equals("white") || x1 == 1 && color.equals("black"))
+                    && x2 - x1 == 2 * direction && board[x2][y2] == null && board[x1 + direction][y2] == null)
+                return true;
+        } else if (Math.abs(y2 - y1) == 1 && x2 - x1 == direction && board[x2][y2] != null
+                && !board[x2][y2].color.equals(color)) {
+            return true;
+        }
+        return false;
+    }
+}
+
+public class ChessGame {
+    static Piece[][] board = new Piece[8][8];
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        setupBoard();
+
+        String currentPlayer = "white";
+        while (true) {
+            printBoard();
+            System.out.print(currentPlayer + " move (e.g., e2 e4): ");
+            String from = sc.next(), to = sc.next();
+            int[] fromPos = parsePos(from), toPos = parsePos(to);
+
+            Piece piece = board[fromPos[0]][fromPos[1]];
+            if (piece == null || !piece.color.equals(currentPlayer)) {
+                System.out.println("Invalid piece selection.");
+                continue;
+            }
+
+            if (!piece.isValidMove(fromPos[0], fromPos[1], toPos[0], toPos[1], board)) {
+                System.out.println("Invalid move for " + piece.getClass().getSimpleName());
+                continue;
+            }
+
+            if (board[toPos[0]][toPos[1]] != null &&
+                board[toPos[0]][toPos[1]].color.equals(currentPlayer)) {
+                System.out.println("Cannot capture own piece.");
+                continue;
+            }
+
+            board[toPos[0]][toPos[1]] = piece;
+            board[fromPos[0]][fromPos[1]] = null;
+
+            currentPlayer = currentPlayer.equals("white") ? "black" : "white";
+        }
+    }
+
+    static void setupBoard() {
+        for (int i = 0; i < 8; i++) {
+            board[6][i] = new Pawn("white");
+            board[1][i] = new Pawn("black");
+        }
+
+        String[] order = {"Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook"};
+        for (int i = 0; i < 8; i++) {
+            board[7][i] = createPiece(order[i], "white");
+            board[0][i] = createPiece(order[i], "black");
+        }
+    }
+
+    static Piece createPiece(String name, String color) {
+        return switch (name) {
+            case "King" -> new King(color);
+            case "Queen" -> new Queen(color);
+            case "Rook" -> new Rook(color);
+            case "Bishop" -> new Bishop(color);
+            case "Knight" -> new Knight(color);
+            default -> null;
+        };
+    }
+
+    static int[] parsePos(String pos) {
+        return new int[]{8 - (pos.charAt(1) - '0'), pos.charAt(0) - 'a'};
+    }
+
+    static void printBoard() {
+        for (int i = 0; i < 8; i++) {
+            System.out.print((8 - i) + " ");
+            for (int j = 0; j < 8; j++) {
+                System.out.print((board[i][j] == null ? "." : board[i][j]) + " ");
+            }
+            System.out.println();
+        }
+        System.out.println("  a b c d e f g h");
+    }
+}
