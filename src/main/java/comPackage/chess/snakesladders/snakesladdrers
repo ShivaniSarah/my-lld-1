@@ -1,0 +1,106 @@
+import java.util.*;
+
+class Snake {
+    int head;
+    int tail;
+
+    Snake(int head, int tail) {
+        this.head = head;
+        this.tail = tail;
+    }
+}
+
+class Ladder {
+    int start;
+    int end;
+
+    Ladder(int start, int end) {
+        this.start = start;
+        this.end = end;
+    }
+}
+
+class Player {
+    String name;
+    int position;
+
+    Player(String name) {
+        this.name = name;
+        this.position = 1;
+    }
+}
+
+class Board {
+    final int SIZE = 100;
+    Map<Integer, Integer> snakes = new HashMap<>();
+    Map<Integer, Integer> ladders = new HashMap<>();
+
+    void addSnake(int head, int tail) {
+        snakes.put(head, tail);
+    }
+
+    void addLadder(int start, int end) {
+        ladders.put(start, end);
+    }
+
+    int move(int pos) {
+        if (snakes.containsKey(pos)) {
+            System.out.println("Oops! Snake from " + pos + " to " + snakes.get(pos));
+            return snakes.get(pos);
+        }
+        if (ladders.containsKey(pos)) {
+            System.out.println("Yay! Ladder from " + pos + " to " + ladders.get(pos));
+            return ladders.get(pos);
+        }
+        return pos;
+    }
+}
+
+class Game {
+    Board board;
+    Queue<Player> players;
+    Random dice;
+
+    Game(Board board, List<Player> playerList) {
+        this.board = board;
+        this.players = new LinkedList<>(playerList);
+        this.dice = new Random();
+    }
+
+    void play() {
+        while (true) {
+            Player current = players.poll();
+            int roll = dice.nextInt(6) + 1;
+            System.out.println(current.name + " rolls a " + roll);
+
+            int newPos = current.position + roll;
+            if (newPos <= board.SIZE) {
+                newPos = board.move(newPos);
+                current.position = newPos;
+            }
+
+            System.out.println(current.name + " is at position " + current.position);
+
+            if (current.position == board.SIZE) {
+                System.out.println(current.name + " wins the game!");
+                break;
+            }
+
+            players.add(current);
+        }
+    }
+}
+
+public class SnakesAndLadders {
+    public static void main(String[] args) {
+        Board board = new Board();
+        board.addSnake(99, 54);
+        board.addSnake(70, 55);
+        board.addLadder(3, 22);
+        board.addLadder(5, 8);
+
+        List<Player> players = Arrays.asList(new Player("Alice"), new Player("Bob"));
+        Game game = new Game(board, players);
+        game.play();
+    }
+}
