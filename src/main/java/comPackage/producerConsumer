@@ -1,0 +1,138 @@
+
+
+
+Message
+@Data
+public class Message {
+    private final String content;
+
+    public Message(String content) {
+        this.content = content;
+    }
+}
+Topic
+@Data
+public class Topic {
+    private final String name;
+    private final List<Partition> partitions;
+
+    public Topic(String name, int partitionCount) {
+        this.name = name;
+        this.partitions = new ArrayList<>();
+        for (int i = 0; i < partitionCount; i++) {
+            partitions.add(new Partition(i));
+        }
+    }
+
+    public Partition getPartition(int partitionId) {
+        return partitions.get(partitionId);
+    }
+}
+Partition
+public class Partition {
+    @Getter private final int id;
+    private final List<Message> messageList;
+    private final Map<Subscriber, AtomicInteger> subscriberOffsets;
+
+    public Partition(int id) {
+        this.id = id;
+        messageList = Collections.synchronizedList(new ArrayList<>());
+        subscriberOffsets = new ConcurrentHashMap<>();
+    }
+
+    public synchronized void addMessage(Message message) {
+        messageList.add(message);
+    }
+
+    public void registerSubscriber(Subscriber subscriber) {
+        subscriberOffsets.putIfAbsent(subscriber, new AtomicInteger(0));
+    }
+
+    public Message getNextMessageForSubscriber(Subscriber subscriber) {
+        AtomicInteger offset = subscriberOffsets.get(subscriber);
+        int currentOffset = offset.get();
+
+        if (currentOffset < messageList.size()) {
+            offset.incrementAndGet();
+            return messageList.get(currentOffset);
+        }
+        return null;
+    }
+}
+Publisher
+public class Publisher {
+    private final String name;
+    private final Random random = new Random();
+
+    public Publisher(String name) {
+        this.name = name;
+    }
+
+    public void publish(Topic topic, String content) {
+        int partitionId = random.nextInt(topic.getPartitions().size());
+        Partition partition = topic.getPartition(partitionId);
+        Message message = new Message(content);
+        partition.addMessage(message);
+        System.out.println("Timestamp: "+ System.currentTimeMillis() +
+                " Publisher " + name + " published message to " + topic.getName() +
+                " Partition " + partitionId);
+    }
+}
+Subscriber
+public class Subscriber {
+    private final String name;
+
+    public Subscriber(String name) {
+        this.name = name;
+    }
+
+    public void subscribe(Topic topic) {
+        for (Partition partition : topic.getPartitions()) {
+            partition.registerSubscriber(this);
+            new Thread(() -> consumeMessages(partition)).start();
+        }
+    }
+
+    private void consumeMessages(Partition partition) {
+        while (true) {
+            Message message = partition.getNextMessageForSubscriber(this);
+            if (message != null) {
+                processMessage(message);
+            }
+        }
+    }
+
+    private void processMessage(Message message) {
+        System.out.println("Timestamp:" + System.currentTimeMillis() +
+                " Subscriber " + name + " consumed message: " + message.getContent());
+    }
+}
+Main
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        Topic topic1 = new Topic("Topic1", 2);
+
+        Publisher publisherA = new Publisher("A");
+        Publisher publisherB = new Publisher("B");
+
+        Subscriber subscriber1 = new Subscriber("1");
+        Subscriber subscriber2 = new Subscriber("2");
+
+        subscriber1.subscribe(topic1);
+        subscriber2.subscribe(topic1);
+
+        publisherA.publish(topic1, "Message 1 from Publisher A");
+        publisherB.publish(topic1, "Message 2 from Publisher B");
+        publisherA.publish(topic1, "Message 3 from Publisher A");
+        publisherB.publish(topic1, "Message 4 from Publisher B");
+
+        Thread.sleep(5000);
+        Topic topic2 = new Topic("Topic2", 2);
+        publisherA.publish(topic2, "Message 1 from Publisher A to topic2");
+        publisherB.publish(topic2, "Message 2 from Publisher B to topic2");
+
+        subscriber1.subscribe(topic2);
+        Thread.sleep(5000);
+        subscriber2.subscribe(topic2);
+    }
+}
