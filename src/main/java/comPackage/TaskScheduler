@@ -1,0 +1,139 @@
+import java.util.Set;
+
+public interface Task {
+    void execute() throws Exception;
+    Set<String> getDependencies(); // Returns a set of task IDs that this task depends on
+    String getId(); // Unique identifier for the task
+}
+
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class SimpleTask implements Task {
+    private final String id;
+    private final Set<String> dependencies;
+
+    public SimpleTask(String id, Set<String> dependencies) {
+        this.id = id;
+        this.dependencies = dependencies != null ? dependencies : new HashSet<>();
+    }
+
+    @Override
+    public void execute() {
+        System.out.println("Executing task: " + id);
+        // Task logic here
+    }
+
+    @Override
+    public Set<String> getDependencies() {
+        return dependencies;
+    }
+
+    @Override
+    public String getId() {
+        return id;
+    }
+}
+
+
+import java.util.*;
+import java.util.concurrent.*;
+
+public class TaskScheduler {
+    private final ExecutorService executorService;
+    private final Map<String, Task> taskMap; // Maps task IDs to tasks
+    private final Map<String, Set<String>> dependencyMap; // Maps task IDs to their dependencies
+    private final Map<String, Integer> dependencyCount; // Maps task IDs to number of unmet dependencies
+
+    public TaskScheduler(int threadPoolSize) {
+        this.executorService = Executors.newFixedThreadPool(threadPoolSize);
+        this.taskMap = new ConcurrentHashMap<>();
+        this.dependencyMap = new ConcurrentHashMap<>();
+        this.dependencyCount = new ConcurrentHashMap<>();
+    }
+
+    public void addTask(Task task) {
+        taskMap.put(task.getId(), task);
+        dependencyMap.put(task.getId(), task.getDependencies());
+        dependencyCount.put(task.getId(), task.getDependencies().size());
+    }
+
+    public void schedule() {
+        for (Task task : taskMap.values()) {
+            scheduleTask(task);
+        }
+    }
+
+    private void scheduleTask(Task task) {
+        // Check if dependencies are met
+        if (dependencyCount.get(task.getId()) == 0) {
+            executorService.submit(() -> {
+                try {
+                    task.execute();
+                    notifyDependencies(task.getId());
+                } catch (Exception e) {
+                    System.err.println("Task execution failed: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    private synchronized void notifyDependencies(String completedTaskId) {
+        for (Map.Entry<String, Set<String>> entry : dependencyMap.entrySet()) {
+            if (entry.getValue().remove(completedTaskId)) {
+                String taskId = entry.getKey();
+                dependencyCount.put(taskId, dependencyCount.get(taskId) - 1);
+                // If all dependencies are met, schedule the task
+                if (dependencyCount.get(taskId) == 0) {
+                    scheduleTask(taskMap.get(taskId));
+                }
+            }
+        }
+    }
+
+    public void shutdown() {
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+        }
+    }
+}
+
+
+import java.util.HashSet;
+
+public class Main {
+    public static void main(String[] args) {
+        TaskScheduler scheduler = new TaskScheduler(4);
+
+        // Create tasks with dependencies
+        Task taskA = new SimpleTask("TaskA", null);
+        Task taskB = new SimpleTask("TaskB", new HashSet<>(Set.of("TaskA")));
+        Task taskC = new SimpleTask("TaskC", new HashSet<>(Set.of("TaskA", "TaskB")));
+
+        // Add tasks to the scheduler
+        scheduler.addTask(taskA);
+        scheduler.addTask(taskB);
+        scheduler.addTask(taskC);
+
+        // Schedule tasks
+        scheduler.schedule();
+
+        // Wait some time before shutting down
+        try {
+            Thread.sleep(10000); // Wait for tasks to complete
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            scheduler.shutdown();
+        }
+    }
+}
+
+
+
