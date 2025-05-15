@@ -1,7 +1,7 @@
 
 
 
-Message
+//Message
 @Data
 public class Message {
     private final String content;
@@ -10,7 +10,7 @@ public class Message {
         this.content = content;
     }
 }
-Topic
+//Topic
 @Data
 public class Topic {
     private final String name;
@@ -28,7 +28,7 @@ public class Topic {
         return partitions.get(partitionId);
     }
 }
-Partition
+//Partition
 public class Partition {
     @Getter private final int id;
     private final List<Message> messageList;
@@ -59,7 +59,7 @@ public class Partition {
         return null;
     }
 }
-Publisher
+//Publisher
 public class Publisher {
     private final String name;
     private final Random random = new Random();
@@ -78,7 +78,7 @@ public class Publisher {
                 " Partition " + partitionId);
     }
 }
-Subscriber
+//Subscriber
 public class Subscriber {
     private final String name;
 
@@ -107,7 +107,7 @@ public class Subscriber {
                 " Subscriber " + name + " consumed message: " + message.getContent());
     }
 }
-Main
+//Main
 public class Main {
     public static void main(String[] args) throws InterruptedException {
         Topic topic1 = new Topic("Topic1", 2);
