@@ -7,7 +7,7 @@ import java.util.Objects;
 
 
 public class Logger {
-    private static Logger instance;
+    private static volatile Logger instance;
     private final LogConfig logConfig;
     private final LogHandler chainHead;
     private final LogObserver logObserver;
@@ -34,10 +34,17 @@ public class Logger {
         return debugLogHandler;
     }
 
-    public static synchronized Logger getInstance(LogConfig logConfig) { // singleton pattern
-        if(Objects.nonNull(instance))
-            return instance;
-        return new Logger(logConfig);
+    public static synchronized void initialize(LogConfig config) {
+        if (instance == null) {
+            instance = new Logger(config);
+        }
+    }
+
+     public static Logger getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("Logger is not initialized. Call initialize() first.");
+        }
+        return instance;
     }
 
    public void addAppender(LogAppender logAppender){
