@@ -34,7 +34,7 @@ public class Logger {
         return debugLogHandler;
     }
 
-    public static synchronized Logger getInstance(LogConfig logConfig) {
+    public static synchronized Logger getInstance(LogConfig logConfig) { // singleton pattern
         if(Objects.nonNull(instance))
             return instance;
         return new Logger(logConfig);
