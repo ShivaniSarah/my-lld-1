@@ -5,7 +5,8 @@ import comPackage.lld9.logappender.ConsoleAppender;
 public class LoggingFrameworkApp1 {
 
     public static  void main(String args[]){
-       Logger logger = Logger.getInstance(new LogConfig(new ConsoleAppender(),false));
+        Logger.initialize(new LogConfig(new ConsoleAppender(),false));
+        Logger logger = Logger.getInstance();
         logger.debug("sdhsjds,d");
         logger.error("sdh,d");
         logger.setlogAppender(new FileAppender("hello.txt"));
